@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """HayatTime scheduled poster (runs on GitHub Actions).
 Posts the next pending video in queue.json:
-  Instagram reel (+ CTA comment) and one Facebook Page post.
+  Instagram reel (+ CTA comment), an Instagram trial reel (different caption) and one Facebook Page post.
 The Meta token comes from the META_TOKEN repository secret. It is never stored in the repo."""
 import datetime, json, os, subprocess, sys, time
 
@@ -82,6 +82,42 @@ def ig_reel(path, caption):
     return {'error': 'instagram upload did not finish after 3 tries'}
 
 
+RAW = 'https://raw.githubusercontent.com/CrosarioL/Meta-Scheduling-/main/videos/'
+
+
+def ig_trial(fname, caption):
+    """Instagram trial reel: shown to non-followers only, never on the profile grid.
+    Instagram fetches the file itself from the public repo link (trials only work that way).
+    If Instagram still puts it on the grid, it is deleted straight away."""
+    url = RAW + fname
+    code = subprocess.run(['curl', '-sI', '-o', '/dev/null', '-w', '%{http_code}', url],
+                          capture_output=True, text=True).stdout
+    if code != '200':
+        return {'error': f'trial skipped: video link not public (HTTP {code}); the repo must be public'}
+    c = post(f'{IG}/media', {'media_type': 'REELS', 'video_url': url, 'caption': caption,
+                            'trial_params': '{"graduation_strategy":"MANUAL"}', 'share_to_feed': 'false'})
+    if 'id' not in c:
+        return {'error': c}
+    st = {}
+    for _ in range(40):
+        time.sleep(30)
+        st = get(f"{c['id']}?fields=status_code,status")
+        if st.get('status_code') in ('FINISHED', 'ERROR', 'EXPIRED'):
+            break
+    if st.get('status_code') != 'FINISHED':
+        return {'error': f"trial processing {st.get('status_code')} {str(st.get('status', ''))[:120]}"}
+    p = post(f'{IG}/media_publish', {'creation_id': c['id']})
+    if 'id' not in p:
+        return {'error': p}
+    info = get(f"{p['id']}?fields=permalink,is_shared_to_feed")
+    if info.get('is_shared_to_feed') is not False:
+        curl(['-X', 'DELETE', f"{G}/{p['id']}", '--data-urlencode', f'access_token={TOKEN}'])
+        log('trial came out as a normal grid reel, deleted it', info)
+        return {'error': 'trial was not a real trial (showed on grid); deleted'}
+    log('LIVE instagram trial', info.get('permalink'))
+    return {'id': p['id'], 'permalink': info.get('permalink')}
+
+
 def fb_video(path, caption):
     pt = get(f'{PAGE}?fields=access_token').get('access_token')
     if not pt:
@@ -131,6 +167,10 @@ def main():
         res['ig'] = ig_reel(path, q['caption'])
         if 'id' in res['ig'] and q.get('comment'):
             res['ig_comment'] = post(f"{res['ig']['id']}/comments", {'message': q['comment']})
+    if todo('trial') and 'id' in res.get('ig', {}) and res.get('trial', {}).get('tries', 0) < 2:
+        tries = res.get('trial', {}).get('tries', 0) + 1
+        res['trial'] = ig_trial(q['file'], alt_caption(q['caption']))
+        res['trial']['tries'] = tries
     ok = all('id' in res.get(k, {}) for k in ('ig', 'fb'))
     if q['status'] == 'partial':
         q['retries'] = q.get('retries', 0) + 1
