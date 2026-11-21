@@ -1,6 +1,6 @@
 # HayatTime scheduler
 
-Posts one video 5 times a day (08:47, 11:47, 14:47, 17:47, 20:47 UK winter time) to the hayattime.app Instagram and the Hayat Time App Facebook Page (2 posts).
+Posts one video 5 times a day (08:47, 11:47, 14:47, 17:47, 20:47 UK winter time) to the hayattime.app Instagram and the Hayat Time App Facebook Page (1 post).
 
 - `queue.json`: the posting order. Each entry has the video file, caption and CTA comment. The bot marks each one `posted` and saves it back here.
 - `videos/`: the video files.

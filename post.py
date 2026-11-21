@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """HayatTime scheduled poster (runs on GitHub Actions).
 Posts the next pending video in queue.json:
-  Instagram reel (+ CTA comment) and two Facebook Page posts (main caption + alternate caption).
+  Instagram reel (+ CTA comment) and one Facebook Page post.
 The Meta token comes from the META_TOKEN repository secret. It is never stored in the repo."""
 import datetime, json, os, subprocess, sys, time
 
@@ -127,13 +127,11 @@ def main():
     todo = lambda k: k not in res or 'error' in res[k]
     if todo('fb'):
         res['fb'] = fb_video(path, q['caption'])
-    if todo('fb2'):
-        res['fb2'] = fb_video(path, alt_caption(q['caption']))
     if todo('ig'):
         res['ig'] = ig_reel(path, q['caption'])
         if 'id' in res['ig'] and q.get('comment'):
             res['ig_comment'] = post(f"{res['ig']['id']}/comments", {'message': q['comment']})
-    ok = all('id' in res.get(k, {}) for k in ('ig', 'fb', 'fb2'))
+    ok = all('id' in res.get(k, {}) for k in ('ig', 'fb'))
     if q['status'] == 'partial':
         q['retries'] = q.get('retries', 0) + 1
     q['status'] = 'posted' if ok else 'partial'
