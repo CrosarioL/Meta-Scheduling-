@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""HayatTime scheduled poster (runs on GitHub Actions).
+"""Scheduled Instagram + Facebook poster (brand settings in brand.json) (runs on GitHub Actions).
 Posts the next pending video in queue.json:
   Instagram reel (+ CTA comment), an Instagram trial reel (different caption) and one Facebook Page post.
 The Meta token comes from the META_TOKEN repository secret. It is never stored in the repo."""
 import datetime, json, os, subprocess, sys, time
 
 G = 'https://graph.facebook.com/v24.0'
-IG = '17841462699125665'
-PAGE = '738913292646016'
 HERE = os.path.dirname(os.path.abspath(__file__))
+BRAND = json.load(open(os.path.join(HERE, 'brand.json')))
+IG = BRAND['ig_user_id']
+PAGE = BRAND['fb_page_id']
 QF = os.path.join(HERE, 'queue.json')
 VID = os.path.join(HERE, 'videos')
 TOKEN = os.environ.get('META_TOKEN', '').strip()
@@ -82,7 +83,7 @@ def ig_reel(path, caption):
     return {'error': 'instagram upload did not finish after 3 tries'}
 
 
-RAW = 'https://raw.githubusercontent.com/CrosarioL/Meta-Scheduling-/main/videos/'
+RAW = f"https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY', 'CrosarioL/Meta-Scheduling-')}/main/videos/"
 
 
 def ig_trial(fname, caption):
@@ -149,7 +150,9 @@ def main():
     # finish a half-posted video first, otherwise take the next pending one
     i = next((k for k, q in enumerate(Q) if q['status'] == 'partial' and q.get('retries', 0) < 2), None)
     if i is None:
-        i = next((k for k, q in enumerate(Q) if q['status'] == 'pending'), None)
+        # newest curated batch first (higher priority), otherwise queue order
+        pend = [k for k, q in enumerate(Q) if q['status'] == 'pending']
+        i = max(pend, key=lambda k: (Q[k].get('priority', 0), -k)) if pend else None
     if i is None:
         print('QUEUE EMPTY')
         return
@@ -161,13 +164,15 @@ def main():
     log('posting', q['file'])
     res = q.setdefault('results', {})
     todo = lambda k: k not in res or 'error' in res[k]
+    if not BRAND.get('facebook', True):
+        res['fb'] = {'id': 'off'}
     if todo('fb'):
         res['fb'] = fb_video(path, q['caption'])
     if todo('ig'):
         res['ig'] = ig_reel(path, q['caption'])
         if 'id' in res['ig'] and q.get('comment'):
             res['ig_comment'] = post(f"{res['ig']['id']}/comments", {'message': q['comment']})
-    if todo('trial') and 'id' in res.get('ig', {}) and res.get('trial', {}).get('tries', 0) < 2:
+    if BRAND.get('trials', True) and todo('trial') and 'id' in res.get('ig', {}) and res.get('trial', {}).get('tries', 0) < 2:
         tries = res.get('trial', {}).get('tries', 0) + 1
         res['trial'] = ig_trial(q['file'], alt_caption(q['caption']))
         res['trial']['tries'] = tries

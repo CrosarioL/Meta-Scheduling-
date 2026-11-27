@@ -2,8 +2,8 @@ name: Post next HayatTime video
 
 on:
   schedule:
-    # 08:47, 11:47, 14:47, 17:47, 20:47 (UTC = UK time in winter; one hour later in UK summer time)
-    - cron: '47 8,11,14,17,20 * * *'
+    # 11:47, 16:47, 20:47 (UTC = UK time in winter; one hour later in UK summer time)
+    - cron: '47 11,16,20 * * *'
   workflow_dispatch:
     inputs:
       now:

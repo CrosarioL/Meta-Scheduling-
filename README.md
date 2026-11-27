@@ -1,13 +1,14 @@
-# HayatTime scheduler
+# Auto-poster (Instagram + Facebook)
 
-Posts one video 5 times a day (08:47, 11:47, 14:47, 17:47, 20:47 UK winter time) to the hayattime.app Instagram and the Hayat Time App Facebook Page (1 post), plus an Instagram trial reel (non-followers only) with a slightly different caption. Trials need this repo to be public, because Instagram downloads the video from it; the Meta token stays private in Secrets either way. If a trial ever lands on the profile grid it is deleted automatically.
+Posts one video 3 times a day (11:47, 16:47, 20:47 UK winter time). Each video goes out as: an Instagram reel with a CTA comment, an Instagram trial reel (non-followers only, different caption) and one Facebook Page post.
 
-- `queue.json`: the posting order. Each entry has the video file, caption and CTA comment. The bot marks each one `posted` and saves it back here.
-- `videos/`: the video files.
+- `brand.json`: which Instagram account and Facebook Page to post to, and whether trials / Facebook are on.
+- `queue.json`: the posting order. New batches added with `add_videos.py` go ahead of older videos. The bot marks each one `posted`.
+- `videos/`: the video files. The repo must be public so Instagram can fetch trial videos; the token stays private in Secrets.
 - `post.py`: the poster. `.github/workflows/post.yml`: the schedule.
 
-**Setup:** add the Meta access token as a repository secret named `META_TOKEN` (Settings, Secrets and variables, Actions). It expires every 60 days, so replace it when posts start failing with "TOKEN PROBLEM".
+**Setup:** add the Meta access token as a repository secret named `META_TOKEN` (Settings, Secrets and variables, Actions). If posts fail with "TOKEN PROBLEM", replace it.
 
 **Post one right now:** Actions tab, "Post next HayatTime video", Run workflow, tick "now".
 
-**Add videos:** put the file in `videos/` and add an entry to `queue.json` with `"status": "pending"`.
+**Add videos:** see `CLAUDE.md` (`python3 add_videos.py batch.json`, then commit and push).
