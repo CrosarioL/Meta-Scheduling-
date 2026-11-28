@@ -13,6 +13,7 @@ PAGE = BRAND['fb_page_id']
 QF = os.path.join(HERE, 'queue.json')
 VID = os.path.join(HERE, 'videos')
 TOKEN = os.environ.get('META_TOKEN', '').strip()
+RAW = f"https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY', 'CrosarioL/Meta-Scheduling-')}/main/videos/"
 
 
 def log(*a):
@@ -55,7 +56,33 @@ def alt_caption(c):
     return new + ('\n\n' + '\n'.join(tags) if tags else '')
 
 
+def ig_reel_url(fname, caption):
+    """Main reel: Instagram downloads the file itself from the public repo link (works for big files)."""
+    c = post(f'{IG}/media', {'media_type': 'REELS', 'video_url': RAW + fname, 'caption': caption})
+    if 'id' not in c:
+        return {'error': c}
+    st = {}
+    for _ in range(40):
+        time.sleep(30)
+        st = get(f"{c['id']}?fields=status_code,status")
+        if st.get('status_code') in ('FINISHED', 'ERROR', 'EXPIRED'):
+            break
+    log('instagram processing', st.get('status_code'), str(st.get('status', ''))[:120])
+    if st.get('status_code') != 'FINISHED':
+        return {'error': f"processing {st.get('status_code')} {str(st.get('status', ''))[:120]}"}
+    p = post(f'{IG}/media_publish', {'creation_id': c['id']})
+    if 'id' not in p:
+        return {'error': p}
+    info = get(f"{p['id']}?fields=permalink")
+    log('LIVE instagram', info.get('permalink'))
+    return {'id': p['id'], 'permalink': info.get('permalink')}
+
+
 def ig_reel(path, caption):
+    r = ig_reel_url(os.path.basename(path), caption)
+    if 'id' in r:
+        return r
+    log('link upload failed, trying direct upload:', str(r)[:200])
     size = os.path.getsize(path)
     for attempt in range(3):
         c = post(f'{IG}/media', {'media_type': 'REELS', 'upload_type': 'resumable', 'caption': caption})
@@ -83,7 +110,7 @@ def ig_reel(path, caption):
     return {'error': 'instagram upload did not finish after 3 tries'}
 
 
-RAW = f"https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY', 'CrosarioL/Meta-Scheduling-')}/main/videos/"
+RAW_ = f"https://raw.githubusercontent.com/{os.environ.get('GITHUB_REPOSITORY', 'CrosarioL/Meta-Scheduling-')}/main/videos/"
 
 
 def ig_trial(fname, caption):
