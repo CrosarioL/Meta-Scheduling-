@@ -442,7 +442,7 @@
   "file": "sixthings_v1.mp4",
   "caption": "Comment YES and I'll send you HayatTime. Your phone locks at every adhan and only unlocks once you've prayed.\n\n#hayattime #islam #salah #muslimtiktok #islamicreminder #dua",
   "comment": "Comment YES 👇 and I'll DM you HayatTime",
-  "status": "partial",
+  "status": "posted",
   "priority": 1,
   "sha256": "dd7eb5707fc317ea360840b2c9bbd07c0431197f37b7e54427b22c0a03ebbd88",
   "results": {
@@ -451,10 +451,20 @@
     "permalink": "https://www.facebook.com/reel/2232957500961359/"
    },
    "ig": {
-    "error": "instagram upload did not finish after 3 tries"
+    "id": "18124168097022705",
+    "permalink": "https://www.instagram.com/reel/DgRjGv8hTlO/"
+   },
+   "trial": {
+    "id": "18036163124857384",
+    "permalink": "https://www.instagram.com/reel/DgRjPbohlqZ/",
+    "tries": 1
+   },
+   "ig_comment": {
+    "id": "18110695406249096"
    }
   },
-  "posted_at": "2026-11-28T05:51:26Z"
+  "posted_at": "2026-11-28T06:09:15Z",
+  "retries": 1
  },
  {
   "file": "sixthings_v2.mp4",
