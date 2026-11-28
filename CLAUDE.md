@@ -1,7 +1,7 @@
 # Posting system (read before touching anything)
 
 This repo posts videos automatically: GitHub Actions runs `post.py` at 11:47, 16:47 and 20:47 (UTC). Each run posts ONE video from `queue.json`:
-1. Instagram reel + the CTA comment
+1. Instagram reel (the CTA comment is added about 15 minutes later)
 2. Instagram trial reel (same video, slightly different caption, non-followers only; deleted automatically if Instagram puts it on the grid)
 3. ONE Facebook Page post (never two)
 

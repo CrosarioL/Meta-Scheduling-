@@ -170,12 +170,18 @@ def main():
         res['fb'] = fb_video(path, q['caption'])
     if todo('ig'):
         res['ig'] = ig_reel(path, q['caption'])
-        if 'id' in res['ig'] and q.get('comment'):
-            res['ig_comment'] = post(f"{res['ig']['id']}/comments", {'message': q['comment']})
+        ig_live_at = time.time()
     if BRAND.get('trials', True) and todo('trial') and 'id' in res.get('ig', {}) and res.get('trial', {}).get('tries', 0) < 2:
         tries = res.get('trial', {}).get('tries', 0) + 1
         res['trial'] = ig_trial(q['file'], alt_caption(q['caption']))
         res['trial']['tries'] = tries
+    # CTA comment goes up about 15 minutes after the reel, not the instant it publishes
+    if 'id' in res.get('ig', {}) and q.get('comment') and 'ig_comment' not in res:
+        wait = 15 * 60 - (time.time() - locals().get('ig_live_at', 0))
+        if wait > 0:
+            log('waiting', int(wait // 60), 'min before the CTA comment')
+            time.sleep(wait)
+        res['ig_comment'] = post(f"{res['ig']['id']}/comments", {'message': q['comment']})
     ok = all('id' in res.get(k, {}) for k in ('ig', 'fb'))
     if q['status'] == 'partial':
         q['retries'] = q.get('retries', 0) + 1
